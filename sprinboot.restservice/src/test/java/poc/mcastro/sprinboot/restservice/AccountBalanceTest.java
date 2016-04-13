@@ -35,14 +35,14 @@ public class AccountBalanceTest {
 	private MockMvc mockMvc;
 	@Mock
 	AccountsRepository accountRepository;
-	@InjectMocks 
+	@InjectMocks
 	AccountBalanceService accountBalanceService;
 	 @Before
 	    public void setup() throws Exception {
 		 mockMvc = MockMvcBuilders.standaloneSetup(accountBalanceService).build();
 	    }
 
-	
+
 	@Test
 	public void should_return_account() throws Exception{
 		final AccountTO accountTO = new AccountTO("1","1234",
@@ -53,7 +53,7 @@ public class AccountBalanceTest {
 				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(
 						jsonPath("$.customerName", is(accountTO.getCustomerName())));
 	}
-	
+
 	@Test
 	public void should_return_unkhown_account() throws Exception{
 		when(accountRepository.findByAccountNumber("123433")).thenReturn(null);
