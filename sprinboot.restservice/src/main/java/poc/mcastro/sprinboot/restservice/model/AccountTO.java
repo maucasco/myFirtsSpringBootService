@@ -13,7 +13,9 @@ public class AccountTO implements Serializable
 	private String accountNumber;
 	private String customerName;
 	private BigDecimal accountBalance;
-	
+
+	private AccountTO() {}
+
 	public AccountTO(String id,String accountNumber, String customerName, BigDecimal accountBalance){
 		this.accountNumber=accountNumber;
 		this.id=id;
