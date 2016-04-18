@@ -5,8 +5,7 @@ import java.math.BigDecimal;
 
 import org.springframework.data.annotation.Id;
 
-public class AccountTO implements Serializable
-{
+public class AccountTO implements Serializable {
 	@Id
 	private String id;
 
@@ -14,24 +13,28 @@ public class AccountTO implements Serializable
 	private String customerName;
 	private BigDecimal accountBalance;
 
-	private AccountTO() {}
-
-	public AccountTO(String id,String accountNumber, String customerName, BigDecimal accountBalance){
-		this.accountNumber=accountNumber;
-		this.id=id;
-		this.customerName=customerName;
-		this.accountBalance= accountBalance;
+	private AccountTO() {
 	}
-	
+
+	public AccountTO(String id, String accountNumber, String customerName, BigDecimal accountBalance) {
+		this.accountNumber = accountNumber;
+		this.id = id;
+		this.customerName = customerName;
+		this.accountBalance = accountBalance;
+	}
+
 	public String getAccountNumber() {
 		return accountNumber;
 	}
+
 	public void setAccountNumber(String accountNumber) {
 		this.accountNumber = accountNumber;
 	}
+
 	public String getCustomerName() {
 		return customerName;
 	}
+
 	public void setCustomerName(String customerName) {
 		this.customerName = customerName;
 	}
@@ -43,6 +46,7 @@ public class AccountTO implements Serializable
 	public void setAccountBalance(BigDecimal accountBalance) {
 		this.accountBalance = accountBalance;
 	}
+
 	public String getId() {
 		return id;
 	}
