@@ -4,6 +4,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 public class SendMoneyTO implements Serializable {
+	@Override
+	public String toString() {
+		return "SendMoneyTO [accountTO=" + accountTO + ", ammount=" + ammount + "]";
+	}
+
 	private AccountTO accountTO;
 	private BigDecimal ammount;
 

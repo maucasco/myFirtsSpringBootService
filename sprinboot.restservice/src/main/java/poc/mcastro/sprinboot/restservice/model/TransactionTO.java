@@ -4,7 +4,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Calendar;
 
+import org.springframework.data.annotation.Id;
+
 public class TransactionTO implements Serializable {
+
+	@Id
 	private String uuid;
 	private Calendar date;
 	private AccountTO accountTO;
@@ -13,6 +17,20 @@ public class TransactionTO implements Serializable {
 	private BigDecimal ammount;
 	private TransactionType transactionType;
 
+	public TransactionTO(){
+		
+	}
+	public TransactionTO(String uuid, Calendar date, AccountTO accountTO, String reason, Status status,
+			BigDecimal ammount, TransactionType transactionType) {
+
+		this.uuid = uuid;
+		this.date = date;
+		this.accountTO = accountTO;
+		this.reason = reason;
+		this.status = status;
+		this.ammount = ammount;
+		this.transactionType = transactionType;
+	}
 	public TransactionType getTransactionType() {
 		return transactionType;
 	}

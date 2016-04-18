@@ -11,13 +11,15 @@ import org.springframework.context.ApplicationContext;
 
 import poc.mcastro.sprinboot.restservice.model.AccountTO;
 import poc.mcastro.sprinboot.restservice.repository.AccountsRepository;
+import poc.mcastro.sprinboot.restservice.repository.TransactionRepository;
 
 @SpringBootApplication
 public class SpringBootRestApplication implements CommandLineRunner {
 
 	@Autowired
 	private AccountsRepository accountsRepository;
-
+	@Autowired
+	private TransactionRepository transactionRepository;
 	public static void main(String[] args) {
 
 		ApplicationContext ctx = SpringApplication.run(SpringBootRestApplication.class, args);

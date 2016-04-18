@@ -6,11 +6,14 @@ import java.util.Calendar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.HttpStatus;
+
+import poc.mcastro.sprinboot.restservice.exception.BusinessException;
 import poc.mcastro.sprinboot.restservice.model.AccountTO;
 import poc.mcastro.sprinboot.restservice.model.GetMoneyTO;
 import poc.mcastro.sprinboot.restservice.model.SendMoneyTO;
@@ -24,23 +27,25 @@ import poc.mcastro.sprinboot.restservice.repository.TransactionRepository;
 @RequestMapping("/balance")
 public class AccountBalanceService {
 	@Autowired
-	AccountsRepository accountRepository;
-	@Autowired
 	TransactionRepository transactionRepository;
+	@Autowired
+	AccountsRepository accountRepository;
+
 
 	@RequestMapping(value = "addMoney", method = RequestMethod.PUT)
-	public void addMoney(SendMoneyTO sendMoneyTO) {
+	public AccountTO addMoney( @RequestBody SendMoneyTO sendMoneyTO) {
 		AccountTO accountTO = accountRepository.findByAccountNumber(sendMoneyTO.getAccountTO().getAccountNumber());
 		if (accountTO == null) {
 			throw new EmptyResultDataAccessException(1);
 
 		}
-		accountTO.getAccountBalance().add(sendMoneyTO.getAmmount());
+		accountTO.setAccountBalance(accountTO.getAccountBalance().add(sendMoneyTO.getAmmount()));
 		accountRepository.save(accountTO);
+		return accountTO;
 	}
 
 	@RequestMapping(value = "getMoney", method = RequestMethod.PUT)
-	public void getMoney(GetMoneyTO getMoneyTO) {
+	public AccountTO getMoney( @RequestBody GetMoneyTO getMoneyTO) {
 
 		TransactionTO to = new TransactionTO();
 		try {
@@ -57,18 +62,19 @@ public class AccountBalanceService {
 
 			if (getMoneyTO.getAmmount().compareTo(accountTO.getAccountBalance()) > 0) {
 				to.setStatus(Status.REJECTED);
-				throw new Exception("insufficient funds");
+				throw new BusinessException("insufficient funds");
 			} else {
-				accountTO.getAccountBalance().subtract(getMoneyTO.getAmmount());
+				accountTO.setAccountBalance(accountTO.getAccountBalance().subtract(getMoneyTO.getAmmount()));
 
 				accountRepository.save(accountTO);
 
 			}
-
+			return accountTO;
 		} catch (Exception e) {
 			// TODO Ask Fabian that logger??
 			e.printStackTrace();
 			to.setStatus(Status.FAILED);
+			throw e;
 		} finally {
 			transactionRepository.save(to);
 		}
@@ -98,7 +104,7 @@ public class AccountBalanceService {
 	}
 
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	@ExceptionHandler(value = { EmptyResultDataAccessException.class })
+	@ExceptionHandler(value = { EmptyResultDataAccessException.class,BusinessException.class })
 	public void notFound() {
 
 	}
