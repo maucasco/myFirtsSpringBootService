@@ -29,76 +29,56 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringApplicationConfiguration(classes= SpringBootRestApplication.class)
+@SpringApplicationConfiguration(classes = SpringBootRestApplication.class)
 public class AccountBalanceTest {
 
 	private MockMvc mockMvc;
 
-	@Mock AccountsRepository accountRepository;
+	@Mock
+	AccountsRepository accountRepository;
 
-	@InjectMocks AccountBalanceService accountBalanceService;
+	@InjectMocks
+	AccountBalanceService accountBalanceService;
 
 	@Before
 	public void setup() throws Exception {
-		 mockMvc = MockMvcBuilders.standaloneSetup(accountBalanceService).build();
+		mockMvc = MockMvcBuilders.standaloneSetup(accountBalanceService).build();
 	}
 
-	private final AccountTO anAccount = new AccountTO(
-			"1",
-			"1234",
-			"Mauricio Castro",
-			BigDecimal.valueOf(565)
-	);
+	private final AccountTO anAccount = new AccountTO("1", "1234", "Mauricio Castro", BigDecimal.valueOf(565));
 
 	@Test
 	public void should_return_account_if_exist() throws Exception {
-		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber()))
-				.thenReturn(anAccount);
+		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
 		// then
-		mockMvc.perform(get("/balance/getAccount")
-				.param("accountNumber", anAccount.getAccountNumber())
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.customerName", is(anAccount.getCustomerName())))
-		;
+		mockMvc.perform(get("/balance/getAccount").param("accountNumber", anAccount.getAccountNumber())
+				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.customerName", is(anAccount.getCustomerName())));
 	}
 
 	@Test
 	public void should_fail_if_account_not_exist() throws Exception {
-		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber()))
-				.thenReturn(null);
+		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(null);
 		// then
-		mockMvc.perform(get("/balance/getAccount")
-				.param("accountNumber", anAccount.getAccountNumber())
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
-		;
+		mockMvc.perform(get("/balance/getAccount").param("accountNumber", anAccount.getAccountNumber())
+				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
 	}
 
 	@Test
 	public void should_return_balance_if_account_exist() throws Exception {
-		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber()))
-				.thenReturn(anAccount);
+		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
 		// then
-		mockMvc.perform(get("/balance/getAccountBalance")
-				.param("accountNumber", anAccount.getAccountNumber())
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(content().string(is(anAccount.getAccountBalance().toString())))
-				.andDo(print())
-		;
+		mockMvc.perform(get("/balance/getAccountBalance").param("accountNumber", anAccount.getAccountNumber())
+				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().string(is(anAccount.getAccountBalance().toString()))).andDo(print());
 	}
 
 	@Test
 	public void should_fail_when_getting_balance_if_account_not_exist() throws Exception {
-		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber()))
-				.thenReturn(null);
+		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(null);
 		// then
-		mockMvc.perform(get("/balance/getAccountBalance")
-				.param("accountNumber", anAccount.getAccountNumber())
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
-		;
+		mockMvc.perform(get("/balance/getAccountBalance").param("accountNumber", anAccount.getAccountNumber())
+				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -114,19 +94,13 @@ public class AccountBalanceTest {
 		String accountAsJson = mapper.writeValueAsString(sendMoneyTO);
 
 		// given an expected new balance
-		final BigDecimal newBalance =
-				anAccount.getAccountBalance().add(addedAccount);
+		final BigDecimal newBalance = anAccount.getAccountBalance().add(addedAccount);
 
-		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber()))
-				.thenReturn(anAccount);
+		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
 		// then
-		mockMvc.perform(post("/balance/addMoney")
-				.contentType(MediaType.APPLICATION_JSON_UTF8)
-				.content(accountAsJson)
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accountBalance", is(newBalance.intValue())))
-		;
+		mockMvc.perform(post("/balance/addMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
+				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.accountBalance", is(newBalance.intValue())));
 	}
 
 	@Test
@@ -141,15 +115,10 @@ public class AccountBalanceTest {
 		ObjectMapper mapper = new ObjectMapper();
 		String accountAsJson = mapper.writeValueAsString(sendMoneyTO);
 
-		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber()))
-				.thenReturn(null);
+		when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(null);
 		// then
-		mockMvc.perform(post("/balance/addMoney")
-				.contentType(MediaType.APPLICATION_JSON_UTF8)
-				.content(accountAsJson)
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
-		;
+		mockMvc.perform(post("/balance/addMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
+				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
 	}
 
 }
