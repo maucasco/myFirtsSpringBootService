@@ -17,6 +17,8 @@ import poc.mcastro.sprinboot.restservice.money.money.account.GetMoneyTO;
 import poc.mcastro.sprinboot.restservice.money.money.account.SendMoneyTO;
 import poc.mcastro.sprinboot.restservice.money.money.rest.AccountBalanceController;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionRepository;
+import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionTO;
+import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType;
 
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -139,14 +141,21 @@ public class AccountBalanceControllerTest {
                 .withReason("Test money insufficient")
                 .build();
 
+        // given a dummy transaction
+        final TransactionTO aDummyTransaction = new TransactionTO.TransactionBuilder().build();
+
         // given the sent data as json
         ObjectMapper mapper = new ObjectMapper();
         String accountAsJson = mapper.writeValueAsString(getMoneyTO);
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
+
         // then
         mockMvc.perform(post("/balance/getMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+
+        // no calls to transactionRepository::save ever done
+        verify(transactionRepository, times(0)).save(aDummyTransaction);
     }
 
     @Test

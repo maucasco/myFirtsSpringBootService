@@ -55,4 +55,13 @@ public class AccountTO implements Serializable {
         this.id = id;
     }
 
+    @Override
+    public String toString() {
+        return "AccountTO{" +
+                "id='" + id + '\'' +
+                ", accountNumber='" + accountNumber + '\'' +
+                ", customerName='" + customerName + '\'' +
+                ", accountBalance=" + accountBalance +
+                '}';
+    }
 }

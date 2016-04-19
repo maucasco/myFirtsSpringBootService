@@ -5,14 +5,16 @@ import poc.mcastro.sprinboot.restservice.money.money.account.AccountTO;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Calendar;
+import java.util.Objects;
 import java.util.UUID;
 
 public class TransactionTO implements Serializable {
 
     @Id
     private String id;
-    private Calendar date;
+    private OffsetDateTime date;
     private AccountTO accountTO;
     private String reason;
     private TransactionStatus transactionStatus;
@@ -34,7 +36,7 @@ public class TransactionTO implements Serializable {
         return id;
     }
 
-    public Calendar getDate() {
+    public OffsetDateTime getDate() {
         return date;
     }
 
@@ -50,9 +52,41 @@ public class TransactionTO implements Serializable {
         return transactionStatus;
     }
 
+    @Override
+    public String toString() {
+        return "TransactionTO{" +
+                "id='" + id + '\'' +
+                ", date=" + date +
+                ", accountTO=" + accountTO +
+                ", reason='" + reason + '\'' +
+                ", transactionStatus=" + transactionStatus +
+                ", ammount=" + ammount +
+                ", transactionType=" + transactionType +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof TransactionTO)) return false;
+        TransactionTO that = (TransactionTO) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(date, that.date) &&
+                Objects.equals(accountTO, that.accountTO) &&
+                Objects.equals(reason, that.reason) &&
+                transactionStatus == that.transactionStatus &&
+                Objects.equals(ammount, that.ammount) &&
+                transactionType == that.transactionType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, date, accountTO, reason, transactionStatus, ammount, transactionType);
+    }
+
     public static class TransactionBuilder {
         private String id;
-        private Calendar date;
+        private OffsetDateTime date;
         private AccountTO accountTO;
         private String reason;
         private TransactionStatus transactionStatus;
@@ -69,7 +103,7 @@ public class TransactionTO implements Serializable {
             return this;
         }
 
-        public TransactionBuilder withDate(Calendar date) {
+        public TransactionBuilder withDate(OffsetDateTime date) {
             this.date = date;
             return this;
         }

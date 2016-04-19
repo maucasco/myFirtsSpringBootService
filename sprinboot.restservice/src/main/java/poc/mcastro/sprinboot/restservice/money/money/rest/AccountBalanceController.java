@@ -16,6 +16,9 @@ import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionTO;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Optional;
 
@@ -52,7 +55,7 @@ public class AccountBalanceController {
                             TransactionTO.TransactionBuilder transactionBuilder = new TransactionTO.TransactionBuilder()
                                     .withRandomId()
                                     .withAccount(accountTO)
-                                    .withDate(Calendar.getInstance())
+                                    .withDate(OffsetDateTime.now(ZoneOffset.UTC))
                                     .withReason(getMoneyTO.getReason())
                                     .withTransactionType(TransactionType.DEBIT);
 
