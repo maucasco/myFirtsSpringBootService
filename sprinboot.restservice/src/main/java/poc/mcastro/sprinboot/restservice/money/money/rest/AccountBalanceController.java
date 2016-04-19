@@ -1,17 +1,17 @@
-package poc.mcastro.sprinboot.restservice.money.money;
+package poc.mcastro.sprinboot.restservice.money.money.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import poc.mcastro.sprinboot.restservice.money.core.DataNotFoundException;
+import poc.mcastro.sprinboot.restservice.money.core.InsuficientFundsException;
 import poc.mcastro.sprinboot.restservice.money.money.account.AccountTO;
 import poc.mcastro.sprinboot.restservice.money.money.account.AccountsRepository;
 import poc.mcastro.sprinboot.restservice.money.money.account.GetMoneyTO;
 import poc.mcastro.sprinboot.restservice.money.money.account.SendMoneyTO;
-import poc.mcastro.sprinboot.restservice.money.core.DataNotFoundException;
-import poc.mcastro.sprinboot.restservice.money.core.InsuficientFundsException;
-import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionStatus;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionRepository;
+import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionStatus;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionTO;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType;
 
@@ -29,8 +29,8 @@ public class AccountBalanceController {
     @Autowired
     AccountsRepository accountRepository;
 
-    @RequestMapping(value = "addMoney", method = RequestMethod.PUT)
-    public AccountTO addMoney(@RequestBody SendMoneyTO sendMoneyTO) {
+    @RequestMapping(value = "addMoney", method = RequestMethod.POST)
+    public AccountTO transferMoneyToAccount(@RequestBody SendMoneyTO sendMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(sendMoneyTO.getAccountTO().getAccountNumber()));
         return maybeAccount
@@ -43,26 +43,27 @@ public class AccountBalanceController {
                 ).orElseThrow(() -> new DataNotFoundException("account nof found"));
     }
 
-    @RequestMapping(value = "getMoney", method = RequestMethod.PUT)
-    public AccountTO getMoney(@RequestBody GetMoneyTO getMoneyTO) {
+    @RequestMapping(value = "getMoney", method = RequestMethod.POST)
+    public AccountTO transferMoneyBetweenAccounts(@RequestBody GetMoneyTO getMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(getMoneyTO.getAccountTO().getAccountNumber()));
         return maybeAccount
-                .map(accountTO ->
-                        {
-                            TransactionTO to = new TransactionTO();
-                            to.setAccountTO(accountTO);
-                            to.setDate(Calendar.getInstance());
-                            to.setReason(getMoneyTO.getReason());
-                            to.setTransactionType(TransactionType.DEBIT);
+                .map(accountTO -> {
+                            TransactionTO.TransactionBuilder transactionBuilder = new TransactionTO.TransactionBuilder()
+                                    .withRandomId()
+                                    .withAccount(accountTO)
+                                    .withDate(Calendar.getInstance())
+                                    .withReason(getMoneyTO.getReason())
+                                    .withTransactionType(TransactionType.DEBIT);
 
-                            if (getMoneyTO.getAmmount().compareTo(accountTO.getAccountBalance()) > 0) {
-                                to.setTransactionStatus(TransactionStatus.REJECTED);
+                            if (getMoneyTO.transferAmountLowerThanAccountBalance()) {
+                                transactionBuilder.withTransactionStatus(TransactionStatus.REJECTED);
+                                transactionRepository.save(transactionBuilder.build());
                                 throw new InsuficientFundsException("insufficient funds");
                             } else {
-                                accountTO.setAccountBalance(accountTO.getAccountBalance().subtract(getMoneyTO.getAmmount()));
+                                accountTO.setAccountBalance(accountTO.getAccountBalance().subtract(getMoneyTO.getAmount()));
                                 accountRepository.save(accountTO);
-                                transactionRepository.save(to);
+                                transactionRepository.save(transactionBuilder.build());
                             }
                             return accountTO;
                         }
