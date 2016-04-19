@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 public class AccountTO implements Serializable {
     @Id
     private String id;
-
     private String accountNumber;
     private String customerName;
     private BigDecimal accountBalance;

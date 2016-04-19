@@ -6,7 +6,6 @@ import poc.mcastro.sprinboot.restservice.money.money.account.AccountTO;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Calendar;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -18,18 +17,18 @@ public class TransactionTO implements Serializable {
     private AccountTO accountTO;
     private String reason;
     private TransactionStatus transactionStatus;
-    private BigDecimal ammount;
-    private TransactionType transactionType;
+    private BigDecimal amount;
+    private TransactionType type;
 
     private TransactionTO() {
     }
 
-    public TransactionType getTransactionType() {
-        return transactionType;
+    public TransactionType getType() {
+        return type;
     }
 
-    public BigDecimal getAmmount() {
-        return ammount;
+    public BigDecimal getAmount() {
+        return amount;
     }
 
     public String getId() {
@@ -60,8 +59,8 @@ public class TransactionTO implements Serializable {
                 ", accountTO=" + accountTO +
                 ", reason='" + reason + '\'' +
                 ", transactionStatus=" + transactionStatus +
-                ", ammount=" + ammount +
-                ", transactionType=" + transactionType +
+                ", amount=" + amount +
+                ", type=" + type +
                 '}';
     }
 
@@ -75,13 +74,13 @@ public class TransactionTO implements Serializable {
                 Objects.equals(accountTO, that.accountTO) &&
                 Objects.equals(reason, that.reason) &&
                 transactionStatus == that.transactionStatus &&
-                Objects.equals(ammount, that.ammount) &&
-                transactionType == that.transactionType;
+                Objects.equals(amount, that.amount) &&
+                type == that.type;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, date, accountTO, reason, transactionStatus, ammount, transactionType);
+        return Objects.hash(id, date, accountTO, reason, transactionStatus, amount, type);
     }
 
     public static class TransactionBuilder {
@@ -90,7 +89,7 @@ public class TransactionTO implements Serializable {
         private AccountTO accountTO;
         private String reason;
         private TransactionStatus transactionStatus;
-        private BigDecimal ammount;
+        private BigDecimal amount;
         private TransactionType transactionType;
 
         public TransactionBuilder withRandomId() {
@@ -123,13 +122,13 @@ public class TransactionTO implements Serializable {
             return this;
         }
 
-        public TransactionBuilder withTransactionType(TransactionType transactionType) {
+        public TransactionBuilder withType(TransactionType transactionType) {
             this.transactionType = transactionType;
             return this;
         }
 
-        public TransactionBuilder setAmmount(BigDecimal ammount) {
-            this.ammount = ammount;
+        public TransactionBuilder setAmount(BigDecimal amount) {
+            this.amount = amount;
             return this;
         }
 
@@ -139,9 +138,9 @@ public class TransactionTO implements Serializable {
             transactionTO.date = date;
             transactionTO.accountTO = accountTO;
             transactionTO.reason = reason;
-            transactionTO.ammount = ammount;
+            transactionTO.amount = amount;
             transactionTO.transactionStatus = transactionStatus;
-            transactionTO.transactionType = transactionType;
+            transactionTO.type = transactionType;
             return transactionTO;
         }
     }

@@ -17,9 +17,7 @@ import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.Calendar;
 import java.util.Optional;
 
 @RestController
@@ -47,7 +45,7 @@ public class AccountBalanceController {
     }
 
     @RequestMapping(value = "getMoney", method = RequestMethod.POST)
-    public AccountTO transferMoneyBetweenAccounts(@RequestBody GetMoneyTO getMoneyTO) {
+    public TransactionTO transferMoneyBetweenAccounts(@RequestBody GetMoneyTO getMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(getMoneyTO.getAccountTO().getAccountNumber()));
         return maybeAccount
@@ -57,7 +55,7 @@ public class AccountBalanceController {
                                     .withAccount(accountTO)
                                     .withDate(OffsetDateTime.now(ZoneOffset.UTC))
                                     .withReason(getMoneyTO.getReason())
-                                    .withTransactionType(TransactionType.DEBIT);
+                                    .withType(TransactionType.DEBIT);
 
                             if (getMoneyTO.transferAmountLowerThanAccountBalance()) {
                                 transactionBuilder.withTransactionStatus(TransactionStatus.REJECTED);
@@ -66,9 +64,11 @@ public class AccountBalanceController {
                             } else {
                                 accountTO.setAccountBalance(accountTO.getAccountBalance().subtract(getMoneyTO.getAmount()));
                                 accountRepository.save(accountTO);
-                                transactionRepository.save(transactionBuilder.build());
+
+                                final TransactionTO transactionTO = transactionBuilder.build();
+                                transactionRepository.save(transactionTO);
+                                return transactionTO;
                             }
-                            return accountTO;
                         }
                 ).orElseThrow(() -> new DataNotFoundException("account nof found"));
     }

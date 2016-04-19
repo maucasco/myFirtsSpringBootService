@@ -1,6 +1,7 @@
 package poc.mcastro.sprinboot.restservice.money;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,6 +11,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import poc.mcastro.sprinboot.restservice.money.money.account.AccountTO;
 import poc.mcastro.sprinboot.restservice.money.money.account.AccountsRepository;
@@ -18,12 +20,14 @@ import poc.mcastro.sprinboot.restservice.money.money.account.SendMoneyTO;
 import poc.mcastro.sprinboot.restservice.money.money.rest.AccountBalanceController;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionRepository;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionTO;
-import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType;
 
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -31,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType.DEBIT;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringApplicationConfiguration(classes = SpringBootRestApplication.class)
@@ -52,11 +57,15 @@ public class AccountBalanceControllerTest {
 
     private final AccountTO anAccount = new AccountTO("1", "1234", "Mauricio Castro", BigDecimal.valueOf(565));
 
-    private ObjectMapper anObjectMapper = new ObjectMapper();
+    private ObjectMapper anObjectMapper() {
+        ObjectMapper anObjectMapper = new ObjectMapper();
+        anObjectMapper.registerModule(new JavaTimeModule());
+        return anObjectMapper;
+    }
 
     private static final MediaType APPLICATION_JSON_UTF8 = new MediaType(
-                    MediaType.APPLICATION_JSON.getType(),
-                    MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8")
+            MediaType.APPLICATION_JSON.getType(),
+            MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8")
     );
 
     @Test
@@ -102,7 +111,7 @@ public class AccountBalanceControllerTest {
         sendMoneyTO.setAmmount(amountToAdd);
 
         // given the sent data as json
-        String accountAsJson = anObjectMapper.writeValueAsString(sendMoneyTO);
+        String accountAsJson = anObjectMapper().writeValueAsString(sendMoneyTO);
 
         // given an expected new balance
         final BigDecimal newBalance = anAccount.getAccountBalance().add(amountToAdd);
@@ -123,7 +132,7 @@ public class AccountBalanceControllerTest {
         sendMoneyTO.setAmmount(addedAccount);
 
         // given the sent data as json
-        String accountAsJson = anObjectMapper.writeValueAsString(sendMoneyTO);
+        String accountAsJson = anObjectMapper().writeValueAsString(sendMoneyTO);
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(null);
         // then
@@ -172,16 +181,31 @@ public class AccountBalanceControllerTest {
         BigDecimal expectedBalance = anAccount.getAccountBalance().subtract(anAmount);
 
         // given the send data as json
-        String accountAsJson = anObjectMapper.writeValueAsString(getMoneyTO);
+        String accountAsJson = anObjectMapper().writeValueAsString(getMoneyTO);
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
+        final TransactionTO aTransaction = new TransactionTO.TransactionBuilder()
+                .withRandomId()
+                .withAccount(anAccount)
+                .withDate(OffsetDateTime.now(ZoneOffset.UTC))
+                .withReason(getMoneyTO.getReason())
+                .withType(DEBIT)
+                .build();
 
-        // then
-        mockMvc.perform(post("/balance/getMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
-                .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print())
-                .andExpect(jsonPath("$.accountBalance", is(expectedBalance.intValue())));
+        // then we get a transaction as json
+        final MvcResult result = mockMvc.perform(
+                post("/balance/getMoney").contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .content(accountAsJson)
+                        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print())
+                .andReturn();
 
+        // then the transaction as an object
+        final TransactionTO insertedTransaction =
+                anObjectMapper().readValue(result.getResponse().getContentAsString(), TransactionTO.class);
+
+        assertThat(insertedTransaction.getReason(), is(getMoneyTO.getReason()));
+        assertThat(insertedTransaction.getType(), is(DEBIT));
+        assertThat(insertedTransaction.getAccountTO().getAccountBalance(), is(expectedBalance));
     }
-
 
 }
