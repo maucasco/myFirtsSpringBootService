@@ -31,7 +31,7 @@ public class AccountBalanceController {
     AccountsRepository accountRepository;
 
     @RequestMapping(value = "addMoney", method = RequestMethod.POST)
-    public AccountTO transferMoneyToAccount(@RequestBody SendMoneyTO sendMoneyTO) {
+    public TransactionTO transferMoneyToAccount(@RequestBody SendMoneyTO sendMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(sendMoneyTO.getAccountTO().getAccountNumber()));
         return maybeAccount
@@ -39,12 +39,23 @@ public class AccountBalanceController {
                         {
                             accountTO.setAccountBalance(accountTO.getAccountBalance().add(sendMoneyTO.getAmmount()));
                             accountRepository.save(accountTO);
-                            return accountTO;
+                            
+                            TransactionTO.TransactionBuilder transactionBuilder = new TransactionTO.TransactionBuilder()
+                                    .withRandomId()
+                                    .withAccount(accountTO)
+                                    .withTransactionStatus(TransactionStatus.APPROVED)
+                                    .withDate(OffsetDateTime.now(ZoneOffset.UTC))
+                                    .withReason("Add Money")
+                                    .withType(TransactionType.CREDIT);
+                            
+                            transactionRepository.save(transactionBuilder.build());
+                            
+                            return transactionBuilder.build();
                         }
                 ).orElseThrow(() -> new DataNotFoundException("account nof found"));
     }
 
-    @RequestMapping(value = "getMoney", method = RequestMethod.POST)
+    @RequestMapping(value = "debitMoney", method = RequestMethod.POST)
     public TransactionTO transferMoneyBetweenAccounts(@RequestBody GetMoneyTO getMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(getMoneyTO.getAccountTO().getAccountNumber()));
