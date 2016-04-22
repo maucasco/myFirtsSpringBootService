@@ -34,25 +34,24 @@ public class AccountBalanceController {
     public TransactionTO transferMoneyToAccount(@RequestBody SendMoneyTO sendMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(sendMoneyTO.getAccountTO().getAccountNumber()));
-        return maybeAccount
+
+        final TransactionTO.TransactionBuilder transactionBuilder = maybeAccount
                 .map(accountTO ->
-                        {
-                            accountTO.setAccountBalance(accountTO.getAccountBalance().add(sendMoneyTO.getAmmount()));
-                            accountRepository.save(accountTO);
-                            
-                            TransactionTO.TransactionBuilder transactionBuilder = new TransactionTO.TransactionBuilder()
+                            new TransactionTO.TransactionBuilder()
                                     .withRandomId()
                                     .withAccount(accountTO)
                                     .withTransactionStatus(TransactionStatus.APPROVED)
                                     .withDate(OffsetDateTime.now(ZoneOffset.UTC))
                                     .withReason("Add Money")
-                                    .withType(TransactionType.CREDIT);
-                            
-                            transactionRepository.save(transactionBuilder.build());
-                            
-                            return transactionBuilder.build();
-                        }
+                                    .withType(TransactionType.CREDIT)
+
                 ).orElseThrow(() -> new DataNotFoundException("account nof found"));
+
+        final TransactionTO transactionTO = transactionBuilder.build();
+        transactionTO.getAccountTO().setAccountBalance(transactionTO.getAccountTO().getAccountBalance().add(sendMoneyTO.getAmmount()));
+        accountRepository.save(transactionTO.getAccountTO());
+        transactionRepository.save(transactionTO);
+        return transactionTO;
     }
 
     @RequestMapping(value = "debitMoney", method = RequestMethod.POST)
