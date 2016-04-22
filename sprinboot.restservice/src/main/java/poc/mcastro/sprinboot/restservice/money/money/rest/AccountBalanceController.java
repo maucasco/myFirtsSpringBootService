@@ -48,29 +48,29 @@ public class AccountBalanceController {
     public TransactionTO transferMoneyBetweenAccounts(@RequestBody GetMoneyTO getMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(getMoneyTO.getAccountTO().getAccountNumber()));
-        return maybeAccount
-                .map(accountTO -> {
-                            TransactionTO.TransactionBuilder transactionBuilder = new TransactionTO.TransactionBuilder()
-                                    .withRandomId()
-                                    .withAccount(accountTO)
-                                    .withDate(OffsetDateTime.now(ZoneOffset.UTC))
-                                    .withReason(getMoneyTO.getReason())
-                                    .withType(TransactionType.DEBIT);
 
-                            if (getMoneyTO.transferAmountLowerThanAccountBalance()) {
-                                transactionBuilder.withTransactionStatus(TransactionStatus.REJECTED);
-                                transactionRepository.save(transactionBuilder.build());
-                                throw new InsuficientFundsException("insufficient funds");
-                            } else {
-                                accountTO.setAccountBalance(accountTO.getAccountBalance().subtract(getMoneyTO.getAmount()));
-                                accountRepository.save(accountTO);
-
-                                final TransactionTO transactionTO = transactionBuilder.build();
-                                transactionRepository.save(transactionTO);
-                                return transactionTO;
-                            }
-                        }
+        final TransactionTO.TransactionBuilder transactionBuilder = maybeAccount
+                .map(accountTO ->
+                        new TransactionTO.TransactionBuilder()
+                                .withRandomId()
+                                .withAccount(accountTO)
+                                .withDate(OffsetDateTime.now(ZoneOffset.UTC))
+                                .withReason(getMoneyTO.getReason())
+                                .withType(TransactionType.DEBIT)
                 ).orElseThrow(() -> new DataNotFoundException("account nof found"));
+
+        if (getMoneyTO.transferAmountLowerThanAccountBalance()) {
+            transactionBuilder.withTransactionStatus(TransactionStatus.REJECTED);
+            transactionRepository.save(transactionBuilder.build());
+            throw new InsuficientFundsException("insufficient funds");
+        } else {
+            final TransactionTO transactionTO = transactionBuilder.build();
+            final BigDecimal newAmount = transactionTO.getAccountTO().getAccountBalance().subtract(getMoneyTO.getAmount());
+            transactionTO.getAccountTO().setAccountBalance(newAmount);
+            accountRepository.save(transactionTO.getAccountTO());
+            transactionRepository.save(transactionTO);
+            return transactionTO;
+        }
     }
 
     @RequestMapping(value = "getAccountBalance", method = RequestMethod.GET)
