@@ -19,7 +19,9 @@ import poc.mcastro.sprinboot.restservice.money.money.account.GetMoneyTO;
 import poc.mcastro.sprinboot.restservice.money.money.account.SendMoneyTO;
 import poc.mcastro.sprinboot.restservice.money.money.rest.AccountBalanceController;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionRepository;
+import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionStatus;
 import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionTO;
+import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType;
 
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -118,9 +120,15 @@ public class AccountBalanceControllerTest {
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
         // then
-        mockMvc.perform(post("/balance/addMoney").contentType(APPLICATION_JSON_UTF8).content(accountAsJson)
-                .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print())
-                .andExpect(jsonPath("$.accountBalance", is(newBalance.intValue())));
+        final MvcResult result=mockMvc.perform(post("/balance/addMoney").contentType(APPLICATION_JSON_UTF8).content(accountAsJson)
+                .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print()).andReturn();
+        
+        final TransactionTO insertedTransaction =
+                anObjectMapper().readValue(result.getResponse().getContentAsString(), TransactionTO.class);
+
+        assertThat(insertedTransaction.getTransactionStatus(), is(TransactionStatus.APPROVED));
+        assertThat(insertedTransaction.getType(), is(TransactionType.CREDIT));
+        assertThat(insertedTransaction.getAccountTO().getAccountBalance(), is(newBalance));
     }
 
     @Test
@@ -138,10 +146,12 @@ public class AccountBalanceControllerTest {
         // then
         mockMvc.perform(post("/balance/addMoney").contentType(APPLICATION_JSON_UTF8).content(accountAsJson)
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+        
+        
     }
 
     @Test
-    public void should_fail_to_add_money_because_insufficient_founds() throws Exception {
+    public void should_fail_to_debit_money_because_insufficient_founds() throws Exception {
         // given some data to send
         final BigDecimal anAmount = new BigDecimal(10000);
         GetMoneyTO getMoneyTO = new GetMoneyTO.GetMoneyBuilder()
@@ -160,7 +170,7 @@ public class AccountBalanceControllerTest {
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
 
         // then
-        mockMvc.perform(post("/balance/getMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
+        mockMvc.perform(post("/balance/debitMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
 
         // no calls to transactionRepository::save ever done
@@ -194,7 +204,7 @@ public class AccountBalanceControllerTest {
 
         // then we get a transaction as json
         final MvcResult result = mockMvc.perform(
-                post("/balance/getMoney").contentType(MediaType.APPLICATION_JSON_UTF8)
+                post("/balance/debitMoney").contentType(MediaType.APPLICATION_JSON_UTF8)
                         .content(accountAsJson)
                         .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print())
                 .andReturn();

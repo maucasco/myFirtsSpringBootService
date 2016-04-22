@@ -7,5 +7,5 @@ import java.util.List;
 
 @Repository
 public interface TransactionRepository extends MongoRepository<TransactionTO, String> {
-    public List<TransactionTO> findByStatus(String status);
+    public List<TransactionTO> findByTransactionStatus(String status);
 }
