@@ -25,13 +25,10 @@ import poc.mcastro.sprinboot.restservice.money.money.transaction.TransactionType
 
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -77,6 +74,8 @@ public class AccountBalanceControllerTest {
         mockMvc.perform(get("/balance/getAccount").param("accountNumber", anAccount.getAccountNumber())
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.customerName", is(anAccount.getCustomerName())));
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
     }
 
     @Test
@@ -85,6 +84,8 @@ public class AccountBalanceControllerTest {
         // then
         mockMvc.perform(get("/balance/getAccount").param("accountNumber", anAccount.getAccountNumber())
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
     }
 
     @Test
@@ -94,6 +95,8 @@ public class AccountBalanceControllerTest {
         mockMvc.perform(get("/balance/getAccountBalance").param("accountNumber", anAccount.getAccountNumber())
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
                 .andExpect(content().string(is(anAccount.getAccountBalance().toString()))).andDo(print());
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
     }
 
     @Test
@@ -102,6 +105,8 @@ public class AccountBalanceControllerTest {
         // then
         mockMvc.perform(get("/balance/getAccountBalance").param("accountNumber", anAccount.getAccountNumber())
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
     }
 
     @Test
@@ -120,15 +125,18 @@ public class AccountBalanceControllerTest {
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
         // then
-        final MvcResult result=mockMvc.perform(post("/balance/addMoney").contentType(APPLICATION_JSON_UTF8).content(accountAsJson)
+        final MvcResult result = mockMvc.perform(post("/balance/addMoney").contentType(APPLICATION_JSON_UTF8).content(accountAsJson)
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print()).andReturn();
-        
+
         final TransactionTO insertedTransaction =
                 anObjectMapper().readValue(result.getResponse().getContentAsString(), TransactionTO.class);
 
         assertThat(insertedTransaction.getTransactionStatus(), is(TransactionStatus.APPROVED));
         assertThat(insertedTransaction.getType(), is(TransactionType.CREDIT));
         assertThat(insertedTransaction.getAccountTO().getAccountBalance(), is(newBalance));
+
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
     }
 
     @Test
@@ -146,8 +154,9 @@ public class AccountBalanceControllerTest {
         // then
         mockMvc.perform(post("/balance/addMoney").contentType(APPLICATION_JSON_UTF8).content(accountAsJson)
                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
-        
-        
+
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
     }
 
     @Test
@@ -160,21 +169,26 @@ public class AccountBalanceControllerTest {
                 .withReason("Test money insufficient")
                 .build();
 
-        // given a dummy transaction
-        final TransactionTO aDummyTransaction = new TransactionTO.TransactionBuilder().build();
-
         // given the sent data as json
         ObjectMapper mapper = new ObjectMapper();
         String accountAsJson = mapper.writeValueAsString(getMoneyTO);
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
 
-        // then
-        mockMvc.perform(post("/balance/debitMoney").contentType(MediaType.APPLICATION_JSON_UTF8).content(accountAsJson)
-                .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+        // when some money is send
+        mockMvc.perform(post("/balance/debitMoney").contentType(MediaType.APPLICATION_JSON_UTF8)
+                .content(accountAsJson)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
 
-        // no calls to transactionRepository::save ever done
-        verify(transactionRepository, times(0)).save(aDummyTransaction);
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
+
+        // no calls to accountRepository::save ever done
+        verify(accountRepository, times(0)).save(any(AccountTO.class));
+
+        // then a call to accountRepository::save
+        verify(transactionRepository, times(1)).save(any(TransactionTO.class));
     }
 
     @Test
@@ -194,20 +208,24 @@ public class AccountBalanceControllerTest {
         String accountAsJson = anObjectMapper().writeValueAsString(getMoneyTO);
 
         when(accountRepository.findByAccountNumber(anAccount.getAccountNumber())).thenReturn(anAccount);
-        final TransactionTO aTransaction = new TransactionTO.TransactionBuilder()
-                .withRandomId()
-                .withAccount(anAccount)
-                .withDate(OffsetDateTime.now(ZoneOffset.UTC))
-                .withReason(getMoneyTO.getReason())
-                .withType(DEBIT)
-                .build();
 
-        // then we get a transaction as json
+        // when some money is send
         final MvcResult result = mockMvc.perform(
                 post("/balance/debitMoney").contentType(MediaType.APPLICATION_JSON_UTF8)
                         .content(accountAsJson)
-                        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andDo(print())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
                 .andReturn();
+
+        // then a call to accountRepository::findByAccountNumber
+        verify(accountRepository, times(1)).findByAccountNumber(any(String.class));
+
+        // no calls to accountRepository::save ever done
+        verify(accountRepository, times(1)).save(any(AccountTO.class));
+
+        //then the save method is called
+        verify(accountRepository).save(any(AccountTO.class));
 
         // then the transaction as an object
         final TransactionTO insertedTransaction =
