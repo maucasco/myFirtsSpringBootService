@@ -30,7 +30,7 @@ public class AccountBalanceController {
     @Autowired
     AccountsRepository accountRepository;
 
-    @RequestMapping(value = "addMoney", method = RequestMethod.POST)
+    @RequestMapping(value = "add", method = RequestMethod.POST)
     public TransactionTO transferMoneyToAccount(@RequestBody SendMoneyTO sendMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(sendMoneyTO.getAccountTO().getAccountNumber()));
@@ -55,7 +55,7 @@ public class AccountBalanceController {
                 ).orElseThrow(() -> new DataNotFoundException("account nof found"));
     }
 
-    @RequestMapping(value = "debitMoney", method = RequestMethod.POST)
+    @RequestMapping(value = "debit", method = RequestMethod.POST)
     public TransactionTO transferMoneyBetweenAccounts(@RequestBody GetMoneyTO getMoneyTO) {
         final Optional<AccountTO> maybeAccount = Optional
                 .ofNullable(accountRepository.findByAccountNumber(getMoneyTO.getAccountTO().getAccountNumber()));
